@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EcoRadar - App Ciudadano</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root {
+            --primary: #1a4731; --primary-light: #2e7d32; --bg: #f8fafc;
+            --text-dark: #1e293b; --text-light: #64748b; --white: #ffffff;
+            --danger: #ef4444; --warning: #f59e0b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'DM Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body { background-color: #e2e8f0; display: flex; justify-content: center; min-height: 100vh; }
+
+        .app-container {
+            width: 100%; max-width: 400px; background: var(--bg); height: 100vh; position: relative;
+            overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        .pantalla { display: none; flex: 1; overflow-y: auto; padding-bottom: 80px; animation: fadeIn 0.3s ease; }
+        .pantalla.activa { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- PANTALLA LOGIN PREMIUM --- */
+        #pantalla-login { background: var(--white); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; padding-bottom: 0; }
+        .logo-login { width: 90px; height: 90px; background: var(--primary); border-radius: 25px; display: flex; align-items: center; justify-content: center; font-size: 45px; color: white; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(26, 71, 49, 0.25); transform: rotate(-5deg);}
+        
+        .input-wrapper { position: relative; width: 100%; margin-bottom: 15px; }
+        .input-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); font-size: 16px; color: #94a3b8; }
+        .input-login-icon { width: 100%; padding: 15px 15px 15px 45px; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 14px; outline: none; transition: all 0.2s; background: #f8fafc;}
+        .input-login-icon:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1); }
+        
+        .forgot-pass { display: block; text-align: right; width: 100%; font-size: 12px; color: var(--primary); font-weight: 600; text-decoration: none; margin-top: -5px; margin-bottom: 20px; }
+        .btn-black { width: 100%; background: #0f172a; color: white; padding: 16px; border-radius: 12px; font-weight: 700; font-size: 15px; border: none; cursor: pointer; margin-bottom: 25px; transition: background 0.2s;}
+        .btn-black:hover { background: #1e293b; }
+        .btn-social { width: 100%; background: white; color: var(--text-dark); padding: 14px; border-radius: 12px; font-weight: 600; font-size: 14px; border: 1px solid #e2e8f0; cursor: pointer; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);}
+
+        /* --- HEADER GENERAL --- */
+        .app-header { background: var(--primary); color: white; padding: 25px 20px 20px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);}
+        .avatar-container { width: 45px; height: 45px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px solid #52b788; box-shadow: 0 2px 5px rgba(0,0,0,0.2);}
+        
+        /* --- PANTALLA INICIO --- */
+        .seccion-padding { padding: 20px; }
+        .card-ubicacion { background: white; padding: 15px; border-radius: 16px; display: flex; align-items: center; gap: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px;}
+        .grid-categorias { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 25px; }
+        .cat-item { background: white; padding: 15px 5px; border-radius: 16px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.02); font-size: 11px; font-weight: 500; color: var(--text-dark); cursor: pointer; border: 1px solid transparent; transition: 0.2s;}
+        .cat-item:active { border-color: var(--primary); background: #f0fdf4;}
+        .cat-icon { font-size: 30px; margin-bottom: 5px; }
+        
+        /* --- PANTALLAS REPORTES --- */
+        .tabs-container { display: flex; gap: 10px; overflow-x: auto; padding: 20px; padding-bottom: 10px;}
+        .tab-item { background: white; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 500; color: var(--text-light); white-space: nowrap; cursor: pointer; border: 1px solid #e2e8f0; transition: 0.2s;}
+        .tab-item.active { background: var(--primary); color: white; border: none; box-shadow: 0 4px 6px rgba(26, 71, 49, 0.3);}
+        .reporte-card { background: white; margin: 0 20px 15px 20px; border-radius: 16px; padding: 15px; display: flex; gap: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.03); border: 1px solid #f1f5f9;}
+        .reporte-img { width: 70px; height: 70px; background: #f1f5f9; border-radius: 10px; object-fit: cover; display: flex; align-items: center; justify-content: center; font-size: 24px;}
+        .pill-status { font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 6px; display: inline-block; margin-top: 5px;}
+        
+        /* --- FORMULARIO --- */
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: var(--text-dark); font-size: 14px;}
+        .form-control { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 12px; background: white; font-size: 14px; outline: none;}
+        .form-control:focus { border-color: var(--primary); }
+        .btn-enviar { background: var(--primary-light); color: white; border: none; width: 100%; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 10px; box-shadow: 0 4px 10px rgba(46, 125, 50, 0.3);}
+
+        /* --- NAV INFERIOR --- */
+        .bottom-nav { position: absolute; bottom: 0; width: 100%; background: white; display: none; justify-content: space-around; align-items: center; padding: 10px 0; border-top: 1px solid #e2e8f0; z-index: 1000;}
+        .nav-item { text-align: center; color: var(--text-light); font-size: 10px; cursor: pointer; flex: 1; }
+        .nav-item.active { color: var(--primary); font-weight: bold; }
+        .nav-icon { font-size: 20px; margin-bottom: 3px; display: block; }
+        .nav-fab-wrapper { position: relative; top: -20px; }
+        .nav-fab { width: 55px; height: 55px; background: var(--primary-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 30px; box-shadow: 0 4px 10px rgba(46,125,50,0.4); cursor: pointer;}
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <div id="pantalla-login" class="pantalla activa" style="display: flex;">
+        <div class="logo-login">📡</div>
+        <h1 style="color: var(--text-dark); margin-bottom: 5px; font-weight: 800; letter-spacing: -0.5px;">EcoRadar</h1>
+        <p style="color: var(--text-light); margin-bottom: 30px; text-align: center; font-size: 13px;">Inicia sesión para reportar <br>problemas en tu ciudad</p>
+        
+        <div class="input-wrapper">
+            <span class="input-icon">✉️</span>
+            <input type="email" id="login-correo" class="input-login-icon" placeholder="Correo electrónico">
+        </div>
+        
+        <div class="input-wrapper">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="login-pass" class="input-login-icon" placeholder="Contraseña">
+        </div>
+        
+        <a href="#" class="forgot-pass" onclick="alert('Sistema de recuperación en desarrollo')">¿Olvidaste tu contraseña?</a>
+        
+        <button class="btn-black" id="btn-login" onclick="iniciarSesion()">Ingresar a mi cuenta</button>
+        
+        <div style="width: 100%; display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+            <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+            <span style="font-size: 11px; color: #94a3b8; font-weight: 600; letter-spacing: 1px;">O CONTINÚA CON</span>
+            <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+        </div>
+        
+       <div id="g_id_onload"
+             data-client_id="60446652956-lgqajq1c43js23ek2tc1lrf96u0ru6lc.apps.googleusercontent.com"
+             data-context="signin"
+             data-ux_mode="popup"
+             data-callback="manejarLoginGoogle"
+             data-auto_prompt="false">
+        </div>
+        <div class="g_id_signin"
+             data-type="standard"
+             data-shape="rectangular"
+             data-theme="outline"
+             data-text="continue_with"
+             data-size="large"
+             data-logo_alignment="center"
+             style="width: 100%; display: flex; justify-content: center; margin-bottom: 10px;">
+        </div>
+
+        <button class="btn-social" onclick="alert('API de Apple en desarrollo')">🍏 Continuar con Apple</button>
+    </div>
+
+    <div id="pantalla-inicio" class="pantalla">
+        <div class="app-header">
+            <div>
+                <h2 style="font-size: 20px;" id="header-nombre">¡Bienvenido!</h2>
+                <p style="font-size: 13px; opacity: 0.9;">Reporta problemas en tu ciudad.</p>
+            </div>
+            <div class="avatar-container" id="header-avatar">
+                <div style="font-size:20px;">👤</div>
+            </div>
+        </div>
+
+        <div class="seccion-padding">
+            <div class="card-ubicacion">
+                <div style="font-size: 30px;">📍</div>
+                <div>
+                    <h4 style="color: var(--text-dark); margin-bottom: 2px;">Ubicación actual</h4>
+                    <p style="color: var(--text-light); font-size: 12px;">Sector Centro, Villahermosa</p>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 15px; color: var(--text-dark); font-size: 16px;">¿Qué deseas reportar?</h3>
+            <div class="grid-categorias">
+                <div class="cat-item" onclick="irAReportar('Baches')"><div class="cat-icon">🕳️</div>Baches</div>
+                <div class="cat-item" onclick="irAReportar('Residuos')"><div class="cat-icon">🗑️</div>Residuos</div>
+                <div class="cat-item" onclick="irAReportar('Fugas')"><div class="cat-icon">💧</div>Fugas de Agua</div>
+                <div class="cat-item" onclick="irAReportar('Alumbrado')"><div class="cat-icon">💡</div>Alumbrado</div>
+                <div class="cat-item" onclick="irAReportar('Ramas')"><div class="cat-icon">🌳</div>Ramas Caídas</div>
+                <div class="cat-item" onclick="irAReportar('Quema')"><div class="cat-icon">🔥</div>Quema de Basura</div>
+            </div>
+
+            <h3 style="margin-bottom: 15px; color: var(--text-dark); font-size: 16px;">Reportes Recientes en tu zona</h3>
+            <div id="lista-recientes">
+                <p style="font-size: 12px; color: #666; text-align: center;">Cargando actividad reciente...</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="pantalla-mis-reportes" class="pantalla">
+        <div style="background: white; padding: 20px; text-align: center; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 10;">
+            <h2 style="color: var(--primary);">Mis Reportes</h2>
+        </div>
+        
+        <div class="tabs-container">
+            <div class="tab-item active" onclick="filtrarReportesTab(this, 'Pendientes')">Pendientes</div>
+            <div class="tab-item" onclick="filtrarReportesTab(this, 'En Proceso')">En Proceso</div>
+            <div class="tab-item" onclick="filtrarReportesTab(this, 'Resueltos')">Resueltos</div>
+            <div class="tab-item" onclick="filtrarReportesTab(this, 'Todos')">Todos</div>
+        </div>
+
+        <div id="lista-mis-reportes"></div>
+    </div>
+
+    <div id="pantalla-reportar" class="pantalla">
+        <div style="background: var(--primary); color: white; padding: 20px; text-align: center; position: sticky; top: 0; z-index: 10;">
+            <h2 style="font-size: 18px;">Nuevo Reporte</h2>
+        </div>
+        
+        <div class="seccion-padding">
+            <form onsubmit="enviarReporte(event)">
+                <div class="form-group">
+                    <label>Categoría</label>
+                    <select id="categoria" class="form-control" required>
+                        <option value="1">Baches y Pavimentación</option>
+                        <option value="2">Basura y Limpieza</option>
+                        <option value="3">Fugas de Agua</option>
+                        <option value="4">Alumbrado Público</option>
+                        <option value="5">Protección Civil (Ramas/Fuego)</option>
+                    </select>
+                </div>
+        
+                <div class="form-group">
+                    <label>Título del Problema</label>
+                    <input type="text" id="titulo" class="form-control" placeholder="Ej: Fuga de agua masiva" required>
+                </div>
+        
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <textarea id="descripcion" class="form-control" rows="3" placeholder="Detalla la situación..." required></textarea>
+                </div>
+        
+                <div class="form-group">
+                    <label>Ubicación en el Mapa</label>
+                    <p style="font-size: 11px; color: var(--text-light); margin-bottom: 8px;">Toca el mapa para fijar el marcador 📍</p>
+                    <div id="mapa-ciudadano" style="height: 200px; width: 100%; border-radius: 12px; margin-bottom: 10px; border: 1px solid #cbd5e1; z-index: 1;"></div>
+                    <input type="text" id="coords" class="form-control" placeholder="Coordenadas automáticas" readonly required style="background: #f1f5f9; color: #64748b;">
+                </div>
+        
+                <div class="form-group">
+                    <label>Fotografía (Opcional)</label>
+                    <input type="file" id="foto" class="form-control" accept="image/*" style="background: white;">
+                </div>
+        
+                <button type="submit" class="btn-enviar">Enviar Reporte</button>
+            </form>
+        </div>
+    </div>
+
+    <nav class="bottom-nav" id="menu-inferior">
+        <div class="nav-item active" onclick="cambiarPantallaApp('pantalla-inicio', this)">
+            <span class="nav-icon">🏠</span>Inicio
+        </div>
+        <div class="nav-item" onclick="cambiarPantallaApp('pantalla-mis-reportes', this)">
+            <span class="nav-icon">📋</span>Mis Reportes
+        </div>
+        
+        <div class="nav-fab-wrapper" onclick="cambiarPantallaApp('pantalla-reportar', null)">
+            <div class="nav-fab">+</div>
+        </div>
+
+        <div class="nav-item" onclick="alert('Sección de Notificaciones en desarrollo')">
+            <span class="nav-icon">🔔</span>Alertas
+        </div>
+        <div class="nav-item" onclick="cerrarSesionApp()">
+            <span class="nav-icon">🚪</span>Salir
+        </div>
+    </nav>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // ========================================================
+    // 1. SISTEMA DE LOGIN REAL (Conectado a MySQL)
+    // ========================================================
+    async function iniciarSesion() {
+        const correo = document.getElementById('login-correo').value;
+        const pass = document.getElementById('login-pass').value;
+        const btn = document.getElementById('btn-login');
+
+        if(!correo || !pass) { alert("⚠️ Por favor, ingresa tu correo y contraseña."); return; }
+
+        btn.innerText = "Verificando..."; btn.disabled = true;
+
+        try {
+            const respuesta = await fetch('http://192.168.1.87:8080/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ correo: correo, contrasena: pass })
+            });
+
+            const data = await respuesta.json();
+
+            if(respuesta.ok) {
+                let primerNombre = data.usuario.split(' ')[0]; 
+                document.getElementById('header-nombre').innerText = `¡Bienvenido, ${primerNombre}!`;
+                
+                const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.usuario)}&background=1a4731&color=fff&size=128&bold=true`;
+                document.getElementById('header-avatar').innerHTML = `<img src="${avatarUrl}" style="width:100%; height:100%; object-fit:cover;">`;
+
+                document.getElementById('pantalla-login').classList.remove('activa');
+                document.getElementById('pantalla-inicio').classList.add('activa');
+                document.getElementById('menu-inferior').style.display = 'flex';
+
+                cargarMisReportes();
+                cargarReportesRecientes();
+            } else {
+                alert("❌ " + (data.error || "Datos incorrectos"));
+            }
+        } catch (error) {
+            alert("🔌 Error al conectar con el servidor.");
+        } finally {
+            btn.innerText = "Ingresar a mi cuenta"; btn.disabled = false;
+        }
+    }
+
+    // ========================================================
+    // LOGIN CON GOOGLE API
+    // ========================================================
+    function manejarLoginGoogle(response) {
+        const base64Url = response.credential.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+
+        const datosGoogle = JSON.parse(jsonPayload);
+        console.log("Datos del usuario verificados por Google:", datosGoogle);
+
+        const nombreReal = datosGoogle.given_name;
+        const fotoGoogle = datosGoogle.picture;
+        const correoReal = datosGoogle.email;
+
+        document.getElementById('header-nombre').innerText = `¡Bienvenido, ${nombreReal}!`;
+        document.getElementById('header-avatar').innerHTML = `<img src="${fotoGoogle}" style="width:100%; height:100%; object-fit:cover;">`;
+
+        document.getElementById('pantalla-login').classList.remove('activa');
+        document.getElementById('pantalla-inicio').classList.add('activa');
+        document.getElementById('menu-inferior').style.display = 'flex';
+
+        cargarMisReportes();
+        cargarReportesRecientes();
+    }
+
+    function cerrarSesionApp() {
+        document.getElementById('menu-inferior').style.display = 'none';
+        document.querySelectorAll('.pantalla').forEach(p => p.classList.remove('activa'));
+        document.getElementById('pantalla-login').classList.add('activa');
+        document.getElementById('login-pass').value = ''; 
+    }
+
+    // ========================================================
+    // 2. NAVEGACIÓN Y MAPA
+    // ========================================================
+    function cambiarPantallaApp(pantallaId, elementoNav) {
+        document.querySelectorAll('.pantalla').forEach(p => p.classList.remove('activa'));
+        document.getElementById(pantallaId).classList.add('activa');
+        
+        if (elementoNav) {
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            elementoNav.classList.add('active');
+        } else {
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+        }
+
+        if (pantallaId === 'pantalla-reportar') setTimeout(() => { mapaCiudadano.invalidateSize(); }, 200);
+    }
+
+    function irAReportar(categoria) { cambiarPantallaApp('pantalla-reportar', null); }
+
+    const mapaCiudadano = L.map('mapa-ciudadano').setView([17.9895, -92.9471], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(mapaCiudadano);
+    let marcadorActual = null;
+
+    mapaCiudadano.on('click', function(e) {
+        const lat = e.latlng.lat.toFixed(6); const lng = e.latlng.lng.toFixed(6);
+        if (marcadorActual) mapaCiudadano.removeLayer(marcadorActual);
+        marcadorActual = L.marker([lat, lng]).addTo(mapaCiudadano);
+        document.getElementById('coords').value = `${lat}, ${lng}`;
+    });
+
+    // ========================================================
+    // 3. ENVIAR REPORTE
+    // ========================================================
+    async function enviarReporte(event) {
+        event.preventDefault(); 
+        const coordenadas = document.getElementById('coords').value;
+        if (!coordenadas) { alert("⚠️ Por favor, toca el mapa para indicar dónde está el problema."); return; }
+
+        const [latitud, longitud] = coordenadas.split(',').map(c => c.trim());
+        const formData = new FormData();
+        formData.append("titulo", document.getElementById('titulo').value);
+        formData.append("descripcion", document.getElementById('descripcion').value);
+        formData.append("id_categorias", document.getElementById('categoria').value);
+        formData.append("latitud", latitud);
+        formData.append("longitud", longitud);
+        formData.append("id_usuario", 1);
+        
+        const fotoInput = document.getElementById('foto');
+        if (fotoInput && fotoInput.files.length > 0) formData.append("fotografia", fotoInput.files[0]);
+
+        const btnSubmit = document.querySelector('.btn-enviar');
+        const textoOriginal = btnSubmit.innerText;
+        try {
+            btnSubmit.innerText = "🚀 Enviando..."; btnSubmit.disabled = true;
+            const respuesta = await fetch('http://192.168.1.87:8080/api/reportes', { method: 'POST', body: formData });
+            if (respuesta.ok) {
+                alert("✅ ¡Reporte enviado! Aparecerá pronto en 'Mis Reportes'.");
+                document.querySelector('form').reset(); 
+                if(marcadorActual) mapaCiudadano.removeLayer(marcadorActual);
+                
+                cargarMisReportes();
+                cargarReportesRecientes();
+                cambiarPantallaApp('pantalla-mis-reportes', document.querySelectorAll('.nav-item')[1]);
+            } else { alert("❌ Ocurrió un error. Revisa el servidor."); }
+        } catch (error) { alert("🔌 Error de conexión con el servidor Go.");
+        } finally { btnSubmit.innerText = textoOriginal; btnSubmit.disabled = false; }
+    }
+
+    // ========================================================
+    // 4. REPORTES RECIENTES EN EL HOME (REALES DESDE GO)
+    // ========================================================
+    async function cargarReportesRecientes() {
+        try {
+            const respuesta = await fetch('http://192.168.1.87:8080/api/reportes');
+            let reportes = await respuesta.json();
+            
+            let activos = reportes.filter(r => !r.estado.toUpperCase().includes('LIBERADO')).reverse();
+            let recientes = activos.slice(0, 2);
+
+            const contenedor = document.getElementById('lista-recientes');
+            contenedor.innerHTML = ''; 
+
+            recientes.forEach(rep => {
+                let estadoColor = '#fef3c7'; let estadoTextoColor = '#d97706'; 
+                let estNormal = rep.estado.toUpperCase();
+                if(estNormal.includes('EN PROCESO')) { estadoColor = '#e0f2fe'; estadoTextoColor = '#0284c7'; } 
+                else if(estNormal.includes('RESUELTO')) { estadoColor = '#dcfce7'; estadoTextoColor = '#166534'; }
+
+                let icono = '📋'; let cat = (rep.categoria || '').toLowerCase();
+                if(cat.includes('basura')) icono = '🗑️';
+                if(cat.includes('agua') || cat.includes('fuga')) icono = '💧';
+                if(cat.includes('bache')) icono = '🕳️';
+                if(cat.includes('luz') || cat.includes('alumbrado')) icono = '💡';
+                if(cat.includes('rama') || cat.includes('fuego')) icono = '🔥';
+
+                let divImg = `<div class="reporte-img">${icono}</div>`;
+                if(rep.fotografia) {
+                    divImg = `<img src="http://192.168.1.87:8080/uploads/${rep.fotografia}" class="reporte-img" style="border:1px solid #e2e8f0;">`;
+                }
+
+                contenedor.innerHTML += `
+                <div class="reporte-card" style="margin: 0 0 15px 0;">
+                    ${divImg}
+                    <div style="flex: 1; display:flex; flex-direction:column; justify-content:center;">
+                        <h4 style="color: var(--text-dark); margin-bottom: 3px; font-size:14px;">${rep.titulo}</h4>
+                        <p style="color: var(--text-light); font-size: 11px; margin-bottom: 5px;">📍 ${rep.categoria}</p>
+                        <div><span class="pill-status" style="background:${estadoColor}; color:${estadoTextoColor};">${rep.estado}</span></div>
+                    </div>
+                </div>`;
+            });
+
+            if(recientes.length === 0) contenedor.innerHTML = "<p style='font-size:12px; color:#666; text-align:center;'>No hay reportes recientes.</p>";
+        } catch (error) { console.error(error); }
+    }
+
+    // ========================================================
+    // 5. CARGAR Y FILTRAR MIS REPORTES
+    // ========================================================
+    let reportesGlobales = []; 
+    async function cargarMisReportes() {
+        try {
+            const respuesta = await fetch('http://192.168.1.87:8080/api/reportes');
+            const reportes = await respuesta.json();
+            reportesGlobales = reportes.reverse(); 
+            const tabActivo = document.querySelector('.tabs-container .tab-item.active').innerText.trim();
+            renderMisReportes(tabActivo);
+        } catch (error) { console.error(error); }
+    }
+
+    function filtrarReportesTab(elementoTab, filtro) {
+        document.querySelectorAll('.tabs-container .tab-item').forEach(t => t.classList.remove('active'));
+        elementoTab.classList.add('active');
+        renderMisReportes(filtro);
+    }
+
+    function renderMisReportes(filtro) {
+        const contenedor = document.getElementById('lista-mis-reportes');
+        contenedor.innerHTML = ''; 
+
+        const filtrados = reportesGlobales.filter(rep => {
+            let est = rep.estado.toUpperCase();
+            if(est.includes('LIBERADO')) return false; 
+            if(filtro === 'Todos') return true;
+            if(filtro === 'Pendientes' && est.includes('PENDIENTE')) return true;
+            if(filtro === 'En Proceso' && est.includes('EN PROCESO')) return true;
+            if(filtro === 'Resueltos' && est.includes('RESUELTO')) return true;
+            return false; 
+        });
+
+        filtrados.forEach(rep => {
+            let est = rep.estado.toUpperCase();
+            let estadoColor = '#fef3c7'; let estadoTextoColor = '#d97706'; 
+            if(est.includes('EN PROCESO')) { estadoColor = '#e0f2fe'; estadoTextoColor = '#0284c7'; } 
+            else if(est.includes('RESUELTO')) { estadoColor = '#dcfce7'; estadoTextoColor = '#166534'; }
+
+            let icono = '📋'; let catText = (rep.categoria || '').toLowerCase();
+            if(catText.includes('basura')) icono = '🗑️';
+            if(catText.includes('agua') || catText.includes('fuga')) icono = '💧';
+            if(catText.includes('bache')) icono = '🕳️';
+            if(catText.includes('luz') || catText.includes('alumbrado')) icono = '💡';
+            if(catText.includes('rama') || catText.includes('fuego')) icono = '🔥';
+
+            let divImg = `<div class="reporte-img">${icono}</div>`;
+            if(rep.fotografia) {
+                divImg = `<img src="http://192.168.1.87:8080/uploads/${rep.fotografia}" class="reporte-img" style="border:1px solid #e2e8f0;">`;
+            }
+
+            contenedor.innerHTML += `
+            <div class="reporte-card">
+                ${divImg}
+                <div style="flex: 1; display:flex; flex-direction:column; justify-content:center;">
+                    <h4 style="color: var(--text-dark); margin-bottom: 3px; font-size:14px;">${rep.titulo}</h4>
+                    <p style="color: var(--text-light); font-size: 11px; margin-bottom: 5px;">📍 ${rep.categoria}</p>
+                    <div><span class="pill-status" style="background:${estadoColor}; color:${estadoTextoColor};">${rep.estado}</span></div>
+                </div>
+            </div>`;
+        });
+
+        if(contenedor.innerHTML === '') contenedor.innerHTML = `<div style="text-align:center; padding: 40px 20px; color:#64748b; font-size:13px;">No tienes reportes en estado: <b>${filtro}</b></div>`;
+    }
+</script>
+
+</body>
+</html>
