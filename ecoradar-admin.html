@@ -800,7 +800,7 @@ Escribe el número o el nombre:`;
   cargarZonas();
   cargarUsuarios();
 
-  // --- MAGIA DE LA IA (GEMINI) ---
+// --- MAGIA DE LA IA (VERSIÓN CON DIAGNÓSTICO) ---
   async function generarAnalisisIA() {
       const btn = document.getElementById('btn-ia');
       const divResultado = document.getElementById('resultado-ia');
@@ -812,14 +812,29 @@ Escribe el número o el nombre:`;
           const res = await fetch('https://ecoradar-api.onrender.com/api/ia/analisis', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(window.datosGlobales) 
+              body: JSON.stringify(window.datosGlobales || []) 
           });
+          
           const data = await res.json();
           
-          const textoIA = data.candidates[0].content.parts[0].text;
-          divResultado.innerHTML = `<strong>Resumen Estratégico:</strong><br>${textoIA}`;
+          // 1. Verificar si Google nos mandó un regaño (Error de API Key)
+          if (data.error) {
+              console.error("Error oficial de Google:", data.error);
+              divResultado.innerHTML = `❌ <b>Google dice:</b> ${data.error.message || 'Error desconocido de API'}`;
+              return;
+          }
+
+          // 2. Si todo sale bien, pintamos el resumen
+          if (data.candidates && data.candidates.length > 0) {
+              const textoIA = data.candidates[0].content.parts[0].text;
+              divResultado.innerHTML = `<strong>Resumen Estratégico:</strong><br>${textoIA}`;
+          } else {
+              divResultado.innerHTML = `⚠️ Google respondió, pero el mensaje venía vacío.`;
+          }
+          
       } catch (e) {
-          divResultado.innerText = "❌ No se pudo conectar con el cerebro de la IA.";
+          console.error("Error de conexión profunda:", e);
+          divResultado.innerHTML = `❌ El servidor de Go en Render no respondió. Revisa la consola F12.`;
       } finally {
           btn.innerText = "✨ Generar Análisis Inteligente";
           btn.disabled = false;
