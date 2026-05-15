@@ -273,6 +273,12 @@
                 </div>
             </div>
         </div>
+        <div class="card" style="margin-top: 20px; padding: 20px; border-left: 5px solid var(--green-light);">
+            <h3 style="margin-bottom: 10px;">🤖 Copiloto EcoRadar IA</h3>
+            <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Pulsa para generar un análisis estratégico basado en los reportes del mes.</p>
+            <button class="btn-save-confirm" onclick="generarAnalisisIA()" id="btn-ia">✨ Generar Análisis Inteligente</button>
+            <div id="resultado-ia" style="margin-top: 15px; font-size: 14px; line-height: 1.6; color: var(--text-main); white-space: pre-wrap;"></div>
+        </div>
         <div class="card" style="margin-top: 20px; padding: 20px;">
             <h3 style="margin-bottom: 15px; color: var(--green-deep);">Histórico de Reportes (Archivados)</h3>
             <div id="historico-meses">
@@ -793,6 +799,32 @@ Escribe el número o el nombre:`;
   cargarAlertas();
   cargarZonas();
   cargarUsuarios();
+
+  // --- MAGIA DE LA IA (GEMINI) ---
+  async function generarAnalisisIA() {
+      const btn = document.getElementById('btn-ia');
+      const divResultado = document.getElementById('resultado-ia');
+      
+      btn.innerText = "⏳ Analizando con IA...";
+      btn.disabled = true;
+
+      try {
+          const res = await fetch('https://ecoradar-api.onrender.com/api/ia/analisis', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(window.datosGlobales) 
+          });
+          const data = await res.json();
+          
+          const textoIA = data.candidates[0].content.parts[0].text;
+          divResultado.innerHTML = `<strong>Resumen Estratégico:</strong><br>${textoIA}`;
+      } catch (e) {
+          divResultado.innerText = "❌ No se pudo conectar con el cerebro de la IA.";
+      } finally {
+          btn.innerText = "✨ Generar Análisis Inteligente";
+          btn.disabled = false;
+      }
+  }
 </script>
 
 </body>
