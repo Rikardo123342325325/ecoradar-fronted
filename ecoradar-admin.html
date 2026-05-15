@@ -562,6 +562,12 @@ let reportesArchivados = []; // NUEVO ARREGLO PARA HISTORICO
         }
       });
 
+      // --- DIBUJAR EL HISTÓRICO ---
+      renderizarHistorico(reportesArchivados);
+
+      // Actualizar Dashboard
+      document.getElementById('badge-total').innerText = contPendientes + contProceso + contResueltos;
+
       // Actualizar Dashboard
       document.getElementById('badge-total').innerText = contPendientes + contProceso + contResueltos;
       statTotal.innerText = contPendientes + contProceso + contResueltos;
