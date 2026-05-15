@@ -480,7 +480,7 @@
             const data = await response.json();
 
             if (response.ok) {
-                // Guardamos el token en la caja fuerte del navegador (LocalStorage)
+                // Guardamos el token en la caja fuerte del navegador (LocalStorage) Version Nube Render
                 localStorage.setItem('eco_token', data.token);
                 localStorage.setItem('eco_admin', data.usuario);
                 
