@@ -261,7 +261,7 @@
         btn.innerText = "Verificando..."; btn.disabled = true;
 
         try {
-            const respuesta = await fetch('http://192.168.1.87:8080/api/login', {
+            const respuesta = await fetch('https://ecoradar-api.onrender.com/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ correo: correo, contrasena: pass })
@@ -381,7 +381,7 @@
         const textoOriginal = btnSubmit.innerText;
         try {
             btnSubmit.innerText = "🚀 Enviando..."; btnSubmit.disabled = true;
-            const respuesta = await fetch('http://192.168.1.87:8080/api/reportes', { method: 'POST', body: formData });
+            const respuesta = await fetch('https://ecoradar-api.onrender.com/api/reportes', { method: 'POST', body: formData });
             if (respuesta.ok) {
                 alert("✅ ¡Reporte enviado! Aparecerá pronto en 'Mis Reportes'.");
                 document.querySelector('form').reset(); 
@@ -400,7 +400,7 @@
     // ========================================================
     async function cargarReportesRecientes() {
         try {
-            const respuesta = await fetch('http://192.168.1.87:8080/api/reportes');
+            const respuesta = await fetch('https://ecoradar-api.onrender.com/api/reportes');
             let reportes = await respuesta.json();
             
             let activos = reportes.filter(r => !r.estado.toUpperCase().includes('LIBERADO')).reverse();
@@ -424,7 +424,7 @@
 
                 let divImg = `<div class="reporte-img">${icono}</div>`;
                 if(rep.fotografia) {
-                    divImg = `<img src="http://192.168.1.87:8080/uploads/${rep.fotografia}" class="reporte-img" style="border:1px solid #e2e8f0;">`;
+                    divImg = `<img src="https://ecoradar-api.onrender.com/uploads/${rep.fotografia}" class="reporte-img" style="border:1px solid #e2e8f0;">`;
                 }
 
                 contenedor.innerHTML += `
@@ -448,7 +448,7 @@
     let reportesGlobales = []; 
     async function cargarMisReportes() {
         try {
-            const respuesta = await fetch('http://192.168.1.87:8080/api/reportes');
+            const respuesta = await fetch('https://ecoradar-api.onrender.com/api/reportes');
             const reportes = await respuesta.json();
             reportesGlobales = reportes.reverse(); 
             const tabActivo = document.querySelector('.tabs-container .tab-item.active').innerText.trim();
@@ -491,7 +491,7 @@
 
             let divImg = `<div class="reporte-img">${icono}</div>`;
             if(rep.fotografia) {
-                divImg = `<img src="http://192.168.1.87:8080/uploads/${rep.fotografia}" class="reporte-img" style="border:1px solid #e2e8f0;">`;
+                divImg = `<img src="https://ecoradar-api.onrender.com/uploads/${rep.fotografia}" class="reporte-img" style="border:1px solid #e2e8f0;">`;
             }
 
             contenedor.innerHTML += `
