@@ -124,8 +124,8 @@
              style="width: 100%; display: flex; justify-content: center; margin-bottom: 10px;">
         </div>
 
-        <button class="btn-social" onclick="alert('API de Apple en desarrollo')">🍏 Continuar con Apple</button>
-    </div>
+       <button class="btn-social" onclick="alert('API de Apple en desarrollo')">🍏 Continuar con Apple</button>
+    </div> <div id="pantalla-inicio" class="pantalla">
 
     <div id="pantalla-inicio" class="pantalla">
         <div class="app-header">
@@ -523,33 +523,37 @@
         if(contenedor.innerHTML === '') contenedor.innerHTML = `<div style="text-align:center; padding: 40px 20px; color:#64748b; font-size:13px;">No tienes reportes en estado: <b>${filtro}</b></div>`;
     }
 
-    function actualizarUbicacionInicio() {
+   function obtenerGPSFormulario() {
+        const inputCoords = document.getElementById('coords');
+        if (navigator.geolocation) {
+            inputCoords.value = "Buscando satélites...";
+            navigator.geolocation.getCurrentPosition(function(position) {
+                const lat = position.coords.latitude.toFixed(6);
+                const lng = position.coords.longitude.toFixed(6);
+                inputCoords.value = `${lat}, ${lng}`;
+                mapaCiudadano.setView([lat, lng], 16);
+                if (marcadorActual) mapaCiudadano.removeLayer(marcadorActual);
+                marcadorActual = L.marker([lat, lng]).addTo(mapaCiudadano);
+            }, () => { alert("❌ Error de GPS"); inputCoords.value = ""; });
+        }
+    }
+
+    async function actualizarUbicacionInicio() {
         const texto = document.getElementById('texto-ubicacion-real');
+        if(!texto) return;
         texto.innerText = "Buscando...";
         if(navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(async function(pos) {
                 try {
-                    // API Gratuita para convertir coordenadas en nombre de calle/colonia
                     const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`);
                     const data = await res.json();
-                    const colonia = data.address.suburb || data.address.neighbourhood || data.address.residential || "Tu zona";
-                    const ciudad = data.address.city || data.address.town || data.address.state || "Centro";
-                    texto.innerText = `${colonia}, ${ciudad}`;
-                } catch(e) {
-                    texto.innerText = "Coordenadas obtenidas";
-                }
-            }, () => texto.innerText = "Ubicación manual necesaria");
+                    const colonia = data.address.suburb || data.address.neighbourhood || "Tu zona";
+                    texto.innerText = `${colonia}, Villahermosa`;
+                } catch(e) { texto.innerText = "Ubicación obtenida"; }
+            });
         }
-        // Pega aquí la función del botón del GPS
-    function obtenerGPSFormulario() {
-        // ... (todo el código del GPS)
     }
-
-    // Pega aquí la función de la tarjeta de inicio
-    function actualizarUbicacionInicio() {
-        // ... (todo el código de la API de calles)
-    }
-    }
+    
 </script>
 
 </body>
