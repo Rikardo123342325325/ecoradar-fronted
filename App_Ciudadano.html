@@ -124,10 +124,8 @@
              style="width: 100%; display: flex; justify-content: center; margin-bottom: 10px;">
         </div>
 
-       <button class="btn-social" onclick="alert('API de Apple en desarrollo')">🍏 Continuar con Apple</button>
+     <button class="btn-social" onclick="alert('API de Apple en desarrollo')">🍏 Continuar con Apple</button>
     </div> <div id="pantalla-inicio" class="pantalla">
-
-    <div id="pantalla-inicio" class="pantalla">
         <div class="app-header">
             <div>
                 <h2 style="font-size: 20px;" id="header-nombre">¡Bienvenido!</h2>
@@ -138,15 +136,14 @@
             </div>
         </div>
 
-        <div class="seccion-padding">
-            <div class="card-ubicacion">
-                <div style="font-size: 30px;">📍</div>
-                <div>
-                    <h4 style="color: var(--text-dark); margin-bottom: 2px;">Ubicación actual</h4>
-                    <p style="color: var(--text-light); font-size: 12px;">Sector Centro, Villahermosa</p>
+       <div class="seccion-padding">
+            <div class="card-ubicacion" style="background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: white; border: none; box-shadow: 0 10px 15px rgba(26, 71, 49, 0.2);">
+                <div style="font-size: 30px; background: rgba(255,255,255,0.2); width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 12px;">📍</div>
+                <div style="flex: 1;">
+                    <h4 style="color: white; margin-bottom: 2px;">Tu Ubicación</h4>
+                    <p id="texto-ubicacion-real" style="color: #e2e8f0; font-size: 12px;">Detectando zona...</p>
                 </div>
             </div>
-
             <h3 style="margin-bottom: 15px; color: var(--text-dark); font-size: 16px;">¿Qué deseas reportar?</h3>
             <div class="grid-categorias">
                 <div class="cat-item" onclick="irAReportar('Baches')"><div class="cat-icon">🕳️</div>Baches</div>
@@ -232,8 +229,9 @@
                             📸 Tomar Foto
                         </button>
                     </div>
-                    <p id="nombre-archivo" style="font-size: 11px; color: var(--primary); margin-top: 8px; text-align: center; font-weight: bold;"></p>
-                </div>
+              <p id="nombre-archivo" style="font-size: 11px; color: var(--primary); margin-top: 8px; text-align: center; font-weight: bold;"></p>
+            </div> 
+        </form> </div> </div>
 
     <nav class="bottom-nav" id="menu-inferior">
         <div class="nav-item active" onclick="cambiarPantallaApp('pantalla-inicio', this)">
@@ -242,11 +240,9 @@
         <div class="nav-item" onclick="cambiarPantallaApp('pantalla-mis-reportes', this)">
             <span class="nav-icon">📋</span>Mis Reportes
         </div>
-        
         <div class="nav-fab-wrapper" onclick="cambiarPantallaApp('pantalla-reportar', null)">
             <div class="nav-fab">+</div>
         </div>
-
         <div class="nav-item" onclick="alert('Sección de Notificaciones en desarrollo')">
             <span class="nav-icon">🔔</span>Alertas
         </div>
@@ -259,6 +255,28 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+    // ========================================================
+    // 0. ESTADO GLOBAL DEL USUARIO
+    // ========================================================
+    let usuarioActual = { id: null, nombre: null };
+
+    function obtenerColorEstado(estado) {
+        let est = estado.toUpperCase();
+        if (est.includes('EN PROCESO')) return { bg: '#e0f2fe', text: '#0284c7' };
+        if (est.includes('RESUELTO'))   return { bg: '#dcfce7', text: '#166534' };
+        return { bg: '#fef3c7', text: '#d97706' };
+    }
+
+    function obtenerIconoCategoria(categoria) {
+        let cat = (categoria || '').toLowerCase();
+        if (cat.includes('basura'))                           return '🗑️';
+        if (cat.includes('agua') || cat.includes('fuga'))     return '💧';
+        if (cat.includes('bache'))                            return '🕳️';
+        if (cat.includes('luz') || cat.includes('alumbrado')) return '💡';
+        if (cat.includes('rama') || cat.includes('fuego'))    return '🔥';
+        return '📋';
+    }
+
     // ========================================================
     // 1. SISTEMA DE LOGIN REAL (Conectado a MySQL)
     // ========================================================
@@ -281,7 +299,10 @@
             const data = await respuesta.json();
 
             if(respuesta.ok) {
-                let primerNombre = data.usuario.split(' ')[0]; 
+                let primerNombre = data.usuario.split(' ')[0];
+                usuarioActual.id = data.id_usuario || 1;
+                usuarioActual.nombre = data.usuario;
+
                 document.getElementById('header-nombre').innerText = `¡Bienvenido, ${primerNombre}!`;
                 
                 const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.usuario)}&background=1a4731&color=fff&size=128&bold=true`;
@@ -315,11 +336,11 @@
         }).join(''));
 
         const datosGoogle = JSON.parse(jsonPayload);
-        console.log("Datos del usuario verificados por Google:", datosGoogle);
 
         const nombreReal = datosGoogle.given_name;
         const fotoGoogle = datosGoogle.picture;
-        const correoReal = datosGoogle.email;
+
+        usuarioActual.nombre = datosGoogle.name;
 
         document.getElementById('header-nombre').innerText = `¡Bienvenido, ${nombreReal}!`;
         document.getElementById('header-avatar').innerHTML = `<img src="${fotoGoogle}" style="width:100%; height:100%; object-fit:cover;">`;
@@ -329,6 +350,7 @@
         document.getElementById('menu-inferior').style.display = 'flex';
 
         cargarMisReportes();
+        actualizarUbicacionInicio();
         cargarReportesRecientes();
     }
 
@@ -356,7 +378,15 @@
         if (pantallaId === 'pantalla-reportar') setTimeout(() => { mapaCiudadano.invalidateSize(); }, 200);
     }
 
-    function irAReportar(categoria) { cambiarPantallaApp('pantalla-reportar', null); }
+    const mapaCategoriasSelect = {
+        'Baches': '1', 'Residuos': '2', 'Fugas': '3',
+        'Alumbrado': '4', 'Ramas': '5', 'Quema': '5', 'Otros': '6'
+    };
+    function irAReportar(categoria) {
+        cambiarPantallaApp('pantalla-reportar', null);
+        const val = mapaCategoriasSelect[categoria];
+        if (val) document.getElementById('categoria').value = val;
+    }
 
     const mapaCiudadano = L.map('mapa-ciudadano').setView([17.9895, -92.9471], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(mapaCiudadano);
@@ -384,7 +414,7 @@
         formData.append("id_categorias", document.getElementById('categoria').value);
         formData.append("latitud", latitud);
         formData.append("longitud", longitud);
-        formData.append("id_usuario", 1);
+        formData.append("id_usuario", usuarioActual.id || 1);
         
         const fotoInput = document.getElementById('foto');
         if (fotoInput && fotoInput.files.length > 0) formData.append("fotografia", fotoInput.files[0]);
@@ -396,8 +426,9 @@
             const respuesta = await fetch('https://ecoradar-api.onrender.com/api/reportes', { method: 'POST', body: formData });
             if (respuesta.ok) {
                 alert("✅ ¡Reporte enviado! Aparecerá pronto en 'Mis Reportes'.");
-                document.querySelector('form').reset(); 
-                if(marcadorActual) mapaCiudadano.removeLayer(marcadorActual);
+                document.querySelector('form').reset();
+                document.getElementById('nombre-archivo').innerText = '';
+                if(marcadorActual) { mapaCiudadano.removeLayer(marcadorActual); marcadorActual = null; }
                 
                 cargarMisReportes();
                 cargarReportesRecientes();
@@ -422,17 +453,8 @@
             contenedor.innerHTML = ''; 
 
             recientes.forEach(rep => {
-                let estadoColor = '#fef3c7'; let estadoTextoColor = '#d97706'; 
-                let estNormal = rep.estado.toUpperCase();
-                if(estNormal.includes('EN PROCESO')) { estadoColor = '#e0f2fe'; estadoTextoColor = '#0284c7'; } 
-                else if(estNormal.includes('RESUELTO')) { estadoColor = '#dcfce7'; estadoTextoColor = '#166534'; }
-
-                let icono = '📋'; let cat = (rep.categoria || '').toLowerCase();
-                if(cat.includes('basura')) icono = '🗑️';
-                if(cat.includes('agua') || cat.includes('fuga')) icono = '💧';
-                if(cat.includes('bache')) icono = '🕳️';
-                if(cat.includes('luz') || cat.includes('alumbrado')) icono = '💡';
-                if(cat.includes('rama') || cat.includes('fuego')) icono = '🔥';
+                let { bg: estadoColor, text: estadoTextoColor } = obtenerColorEstado(rep.estado);
+                let icono = obtenerIconoCategoria(rep.categoria);
 
                 let divImg = `<div class="reporte-img">${icono}</div>`;
                if(rep.fotografia) {
@@ -491,17 +513,8 @@
         });
 
         filtrados.forEach(rep => {
-            let est = rep.estado.toUpperCase();
-            let estadoColor = '#fef3c7'; let estadoTextoColor = '#d97706'; 
-            if(est.includes('EN PROCESO')) { estadoColor = '#e0f2fe'; estadoTextoColor = '#0284c7'; } 
-            else if(est.includes('RESUELTO')) { estadoColor = '#dcfce7'; estadoTextoColor = '#166534'; }
-
-            let icono = '📋'; let catText = (rep.categoria || '').toLowerCase();
-            if(catText.includes('basura')) icono = '🗑️';
-            if(catText.includes('agua') || catText.includes('fuga')) icono = '💧';
-            if(catText.includes('bache')) icono = '🕳️';
-            if(catText.includes('luz') || catText.includes('alumbrado')) icono = '💡';
-            if(catText.includes('rama') || catText.includes('fuego')) icono = '🔥';
+            let { bg: estadoColor, text: estadoTextoColor } = obtenerColorEstado(rep.estado);
+            let icono = obtenerIconoCategoria(rep.categoria);
 
             let divImg = `<div class="reporte-img">${icono}</div>`;
            if(rep.fotografia) {
@@ -543,14 +556,20 @@
         if(!texto) return;
         texto.innerText = "Buscando...";
         if(navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(async function(pos) {
-                try {
-                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`);
-                    const data = await res.json();
-                    const colonia = data.address.suburb || data.address.neighbourhood || "Tu zona";
-                    texto.innerText = `${colonia}, Villahermosa`;
-                } catch(e) { texto.innerText = "Ubicación obtenida"; }
-            });
+            navigator.geolocation.getCurrentPosition(
+                async function(pos) {
+                    try {
+                        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`);
+                        const data = await res.json();
+                        const colonia = data.address.suburb || data.address.neighbourhood || "Tu zona";
+                        const ciudad = data.address.city || data.address.town || data.address.county || "Tabasco";
+                        texto.innerText = `${colonia}, ${ciudad}`;
+                    } catch(e) { texto.innerText = "Ubicación obtenida"; }
+                },
+                function() { texto.innerText = "Ubicación no disponible"; }
+            );
+        } else {
+            texto.innerText = "GPS no soportado";
         }
     }
     
