@@ -155,6 +155,7 @@
                 <div class="cat-item" onclick="irAReportar('Alumbrado')"><div class="cat-icon">💡</div>Alumbrado</div>
                 <div class="cat-item" onclick="irAReportar('Ramas')"><div class="cat-icon">🌳</div>Ramas Caídas</div>
                 <div class="cat-item" onclick="irAReportar('Quema')"><div class="cat-icon">🔥</div>Quema de Basura</div>
+                <div class="cat-item" onclick="irAReportar('Otros')"><div class="cat-icon">📋</div>Otros</div>
             </div>
 
             <h3 style="margin-bottom: 15px; color: var(--text-dark); font-size: 16px;">Reportes Recientes en tu zona</h3>
@@ -194,6 +195,7 @@
                         <option value="3">Fugas de Agua</option>
                         <option value="4">Alumbrado Público</option>
                         <option value="5">Protección Civil (Ramas/Fuego)</option>
+                        <option value="6">Otros / Varios</option>
                     </select>
                 </div>
         
@@ -212,17 +214,26 @@
                     <p style="font-size: 11px; color: var(--text-light); margin-bottom: 8px;">Toca el mapa para fijar el marcador 📍</p>
                     <div id="mapa-ciudadano" style="height: 200px; width: 100%; border-radius: 12px; margin-bottom: 10px; border: 1px solid #cbd5e1; z-index: 1;"></div>
                     <input type="text" id="coords" class="form-control" placeholder="Coordenadas automáticas" readonly required style="background: #f1f5f9; color: #64748b;">
+              <button type="button" onclick="obtenerGPSFormulario()" style="width: 100%; padding: 12px; margin-top: 10px; background: #e0f2fe; color: #0284c7; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        🖈 Usar mi ubicación actual
+                    </button>
                 </div>
         
-                <div class="form-group">
+               <div class="form-group">
                     <label>Fotografía (Opcional)</label>
-                   <input type="file" id="foto" name="fotografia" class="form-control" accept="image/*" style="background: white;">
+                    <div style="display: flex; gap: 10px; margin-top: 5px;">
+                        <input type="file" id="foto" name="fotografia" accept="image/*" style="display: none;" onchange="document.getElementById('nombre-archivo').innerText = '✅ Archivo listo: ' + this.files[0].name">
+                        
+                        <button type="button" style="flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #cbd5e1; background: white; color: var(--text-dark); font-weight: bold; cursor: pointer;" onclick="document.getElementById('foto').removeAttribute('capture'); document.getElementById('foto').click();">
+                            📁 Galería
+                        </button>
+                        
+                        <button type="button" style="flex: 1; padding: 12px; border-radius: 10px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer;" onclick="document.getElementById('foto').setAttribute('capture', 'environment'); document.getElementById('foto').click();">
+                            📸 Tomar Foto
+                        </button>
+                    </div>
+                    <p id="nombre-archivo" style="font-size: 11px; color: var(--primary); margin-top: 8px; text-align: center; font-weight: bold;"></p>
                 </div>
-        
-                <button type="submit" class="btn-enviar">Enviar Reporte</button>
-            </form>
-        </div>
-    </div>
 
     <nav class="bottom-nav" id="menu-inferior">
         <div class="nav-item active" onclick="cambiarPantallaApp('pantalla-inicio', this)">
@@ -240,7 +251,7 @@
             <span class="nav-icon">🔔</span>Alertas
         </div>
         <div class="nav-item" onclick="cerrarSesionApp()">
-            <span class="nav-icon">🚪</span>Salir
+            <span class="nav-icon">➜]</span>Salir
         </div>
     </nav>
 
@@ -281,6 +292,7 @@
                 document.getElementById('menu-inferior').style.display = 'flex';
 
                 cargarMisReportes();
+                actualizarUbicacionInicio();
                 cargarReportesRecientes();
             } else {
                 alert("❌ " + (data.error || "Datos incorrectos"));
@@ -423,9 +435,11 @@
                 if(cat.includes('rama') || cat.includes('fuego')) icono = '🔥';
 
                 let divImg = `<div class="reporte-img">${icono}</div>`;
-                if(rep.fotografia) {
-                    divImg = `<img src="https://ecoradar-api.onrender.com/uploads/${rep.fotografia}" class="reporte-img" style="border:1px solid #e2e8f0;">`;
-                }
+               if(rep.fotografia) {
+                // Si empieza con http es de Cloudinary, si no, es de la carpeta uploads vieja
+                let rutaImagen = rep.fotografia.startsWith('http') ? rep.fotografia : `https://ecoradar-api.onrender.com/uploads/${rep.fotografia}`;
+                divImg = `<img src="${rutaImagen}" class="reporte-img" style="border:1px solid #e2e8f0; object-fit: cover;">`;
+            }
 
                 contenedor.innerHTML += `
                 <div class="reporte-card" style="margin: 0 0 15px 0;">
@@ -490,8 +504,9 @@
             if(catText.includes('rama') || catText.includes('fuego')) icono = '🔥';
 
             let divImg = `<div class="reporte-img">${icono}</div>`;
-            if(rep.fotografia) {
-                divImg = `<img src="https://ecoradar-api.onrender.com/uploads/${rep.fotografia}" class="reporte-img" style="border:1px solid #e2e8f0;">`;
+           if(rep.fotografia) {
+                let rutaImagen = rep.fotografia.startsWith('http') ? rep.fotografia : `https://ecoradar-api.onrender.com/uploads/${rep.fotografia}`;
+                divImg = `<img src="${rutaImagen}" class="reporte-img" style="border:1px solid #e2e8f0; object-fit: cover;">`;
             }
 
             contenedor.innerHTML += `
@@ -507,7 +522,36 @@
 
         if(contenedor.innerHTML === '') contenedor.innerHTML = `<div style="text-align:center; padding: 40px 20px; color:#64748b; font-size:13px;">No tienes reportes en estado: <b>${filtro}</b></div>`;
     }
+
+    function actualizarUbicacionInicio() {
+        const texto = document.getElementById('texto-ubicacion-real');
+        texto.innerText = "Buscando...";
+        if(navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(async function(pos) {
+                try {
+                    // API Gratuita para convertir coordenadas en nombre de calle/colonia
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`);
+                    const data = await res.json();
+                    const colonia = data.address.suburb || data.address.neighbourhood || data.address.residential || "Tu zona";
+                    const ciudad = data.address.city || data.address.town || data.address.state || "Centro";
+                    texto.innerText = `${colonia}, ${ciudad}`;
+                } catch(e) {
+                    texto.innerText = "Coordenadas obtenidas";
+                }
+            }, () => texto.innerText = "Ubicación manual necesaria");
+        }
+        // Pega aquí la función del botón del GPS
+    function obtenerGPSFormulario() {
+        // ... (todo el código del GPS)
+    }
+
+    // Pega aquí la función de la tarjeta de inicio
+    function actualizarUbicacionInicio() {
+        // ... (todo el código de la API de calles)
+    }
+    }
 </script>
 
 </body>
 </html>
+
