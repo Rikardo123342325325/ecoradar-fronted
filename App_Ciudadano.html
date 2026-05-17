@@ -53,7 +53,8 @@
         .cat-icon { font-size: 30px; margin-bottom: 5px; }
         
         /* --- PANTALLAS REPORTES --- */
-        .tabs-container { display: flex; gap: 10px; overflow-x: auto; padding: 20px; padding-bottom: 10px;}
+        .tabs-container { display: flex; gap: 10px; overflow-x: auto; padding: 20px; padding-bottom: 10px; scrollbar-width: none; -ms-overflow-style: none; }
+        .tabs-container::-webkit-scrollbar { display: none; }
         .tab-item { background: white; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 500; color: var(--text-light); white-space: nowrap; cursor: pointer; border: 1px solid #e2e8f0; transition: 0.2s;}
         .tab-item.active { background: var(--primary); color: white; border: none; box-shadow: 0 4px 6px rgba(26, 71, 49, 0.3);}
         .reporte-card { background: white; margin: 0 20px 15px 20px; border-radius: 16px; padding: 15px; display: flex; gap: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.03); border: 1px solid #f1f5f9;}
@@ -420,7 +421,13 @@
         formData.append("id_usuario", usuarioActual.id || 1);
         
         const fotoInput = document.getElementById('foto');
-        if (fotoInput && fotoInput.files.length > 0) formData.append("fotografia", fotoInput.files[0]);
+        if (fotoInput && fotoInput.files.length > 0) {
+            formData.append("fotografia", fotoInput.files[0]);
+            console.log('[EcoRadar] Foto adjunta:', fotoInput.files[0].name, fotoInput.files[0].size, 'bytes');
+        } else {
+            console.log('[EcoRadar] Sin foto adjunta');
+        }
+        console.log('[EcoRadar] id_usuario:', usuarioActual.id, '| id_categorias:', document.getElementById('categoria').value);
 
         const btnSubmit = document.querySelector('.btn-enviar');
         const textoOriginal = btnSubmit.innerText;
@@ -461,9 +468,9 @@
 
                 let divImg = `<div class="reporte-img">${icono}</div>`;
                if(rep.fotografia) {
-                // Si empieza con http es de Cloudinary, si no, es de la carpeta uploads vieja
                 let rutaImagen = rep.fotografia.startsWith('http') ? rep.fotografia : `https://ecoradar-api.onrender.com/uploads/${rep.fotografia}`;
-                divImg = `<img src="${rutaImagen}" class="reporte-img" style="border:1px solid #e2e8f0; object-fit: cover;">`;
+                console.log('[EcoRadar] URL imagen reciente:', rutaImagen);
+                divImg = `<img src="${rutaImagen}" class="reporte-img" style="border:1px solid #e2e8f0; object-fit: cover;" onerror="this.style.display='none'; this.previousSibling && this.previousSibling.remove(); this.parentNode.innerHTML='<div class=\\'reporte-img\\'>${icono}</div>'">`;
             }
 
                 contenedor.innerHTML += `
@@ -522,7 +529,8 @@
             let divImg = `<div class="reporte-img">${icono}</div>`;
            if(rep.fotografia) {
                 let rutaImagen = rep.fotografia.startsWith('http') ? rep.fotografia : `https://ecoradar-api.onrender.com/uploads/${rep.fotografia}`;
-                divImg = `<img src="${rutaImagen}" class="reporte-img" style="border:1px solid #e2e8f0; object-fit: cover;">`;
+                console.log('[EcoRadar] URL imagen reporte:', rutaImagen);
+                divImg = `<img src="${rutaImagen}" class="reporte-img" style="border:1px solid #e2e8f0; object-fit: cover;" onerror="this.style.display='none'; this.parentNode.innerHTML='<div class=\\'reporte-img\\'>${icono}</div>'">`;
             }
 
             contenedor.innerHTML += `
